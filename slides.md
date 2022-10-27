@@ -17,7 +17,7 @@ css: unocss
 
 # TiCDC, a tool for replicating the incremental data of TiDB
 
-How does it work?
+A Deep Dive
 
 <div class="pt-12">
   <span @click="$slidev.nav.next" class="px-2 py-1 rounded cursor-pointer" hover="bg-white bg-opacity-10">
@@ -39,6 +39,7 @@ layout: intro
 
 
 <div class="leading-8 opacity-80">
+PingCAPer.<br>
 TiDB Migration Team Committer.<br>
 TiKV Team Reviewer.<br>
 TiDB Team Reviewer.<br>
@@ -58,3 +59,26 @@ TiDB Team Reviewer.<br>
 <div flex="~ gap2">
 </div>
 
+---
+layout: center
+name: Agenda
+---
+
+# Agenda
+
+<br>
+
+<div class="grid grid-cols-[3fr_2fr] gap-4">
+  <div class="border-l border-gray-400 border-opacity-25 !all:leading-12 !all:list-none my-auto">
+
+  - TiCDC Architecture
+  - Frequently Asked Questions
+  - Evolution Direction
+  </div>
+</div>
+
+<style>
+h1 {
+  font-size: 4rem;
+}
+</style>
