@@ -61,10 +61,11 @@ TiDB Team Reviewer.<br>
 
 ---
 layout: center
-name: Agenda
 ---
 
-# Agenda
+<div text-6xl fw100 animate-bounce-alt animate-count-infinite animate-duration-5s>
+  Agenda
+</div>
 
 <br>
 
@@ -82,3 +83,5 @@ h1 {
   font-size: 4rem;
 }
 </style>
+
+---
