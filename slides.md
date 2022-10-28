@@ -632,3 +632,67 @@ layout: iframe
 url: https://metricstool.pingcap.com/viz/index.html#!/
 scale: 0.6
 ---
+
+---
+layout: intro
+---
+
+# Frequently Asked Questions
+
+---
+layout: two-cols
+---
+
+# Why such a big latency?
+
+<br/>
+
+- Big Transaction
+  - Split the big transaction into small ones.(Only v6.1.0+)
+
+- Throughput too low
+  - Table Memory Quota
+  - Sink Worker Count
+  - Upstream TiKV region count (Big single table)
+  - High workload on Upstream
+
+::right::
+
+<br/>
+<br/>
+<br/>
+
+- Upstream issue
+  - Region Leader Transfer
+  - Resolved TS can not advance
+
+- Downstream issue
+  - Upstream database is too slow
+  - Write conflict
+
+- Cluster topology
+  - Cross-Region Deployment
+
+---
+
+# Why this design?
+
+<br/>
+
+- Data Replication Method
+  - Raft Learner VS Raft Log Event
+
+- Data Order
+  - Do we really need to keep the order of the data?
+
+- Write method
+  - SQL VS Row KV
+
+- Scalability
+  - Why scheduler based on table count?
+
+---
+layout: center
+---
+
+# Thanks!
