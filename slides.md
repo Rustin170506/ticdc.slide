@@ -667,7 +667,7 @@ layout: two-cols
   - Resolved TS can not advance
 
 - Downstream issue
-  - Upstream database is too slow
+  - Downstream database is too slow
   - Write conflict
 
 - Cluster topology
