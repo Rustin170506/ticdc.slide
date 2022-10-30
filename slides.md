@@ -354,7 +354,7 @@ CREATE TABLE TEST(
   <div class="object-contain h-full of-hidden w-full">
 
 ```sql {0|1|3-4|6-8}
--- Execute these two DMs first and then second in TiDB --
+-- Execute these two DMs in TiDB --
 
 INSERT INTO TEST (NAME,AGE)
 VALUES ('Jack',20);
