@@ -397,6 +397,11 @@ flowchart LR
     puller((PullerNode)) --> sorter((SorterNode)) --> mounter((MounterNode)) --> sink((SinkNode))
 ```
 
+<!--
+The table pipeline looks like a pipe. The data flows from the puller to the sorter, and then to the mounter, and
+finally to the sink. So we can go through the pipeline step by step and see how it replicates data.
+-->
+
 ---
 
 # Data Flow - An Example
