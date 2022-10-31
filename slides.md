@@ -413,7 +413,7 @@ finally to the sink. So we can go through the pipeline step by step and see how 
 <div class="grid grid-cols-2 gap-4 items-center h-100">
   <div class="object-contain h-full of-hidden">
 
-```sql {0|1|3-7|6|8-14|0}
+```sql {0|1|3-7|8-14|0}
 -- Create the following table structure--
 
 CREATE TABLE TEST(
@@ -447,6 +447,12 @@ WHERE NAME = 'Jack';
 
   </div>
 </div>
+
+<!--
+This is an example. We create a table named TEST. It has two columns. The first one is NAME. It is the primary key.
+The second one is AGE. We insert a row into the table. And then we update that row. So we can trace the data flow
+in the table pipeline. But before that, let's check the real data structure in TiKV.
+-->
 
 ---
 
@@ -491,6 +497,15 @@ WHERE NAME = 'Jack';
   </div>
 </div>
 
+<!--
+For the insert statement, we can see the key is TEST_Jack. The value is Jack | 20. The key is the table name and the
+primary key. The value is the primary key and the columns. For the update statement, we can see the key is still
+TEST_Jack. But the value is Jack | 25. So we can see the value is updated.
+
+This just a simplified example. In fact, TiKV uses a more complex key-value structure. But it is not important for
+this talk. So we can ignore it.
+-->
+
 ---
 
 # Data Flow - Puller
@@ -520,6 +535,21 @@ Pull DDL and Row Change data from TiKV.
 |      3      |       4      | COMMITTED  |   PUT   |   TEST_Jack  |     Jack  | 25   |     Jack  | 20   |
 +-------------+--------------+------------+---------+--------------+------------------+------------------+
 ```
+
+<!--
+The puller is responsible for pulling the data from TiKV. Let's suppose we have two regions. The first one is
+Region1 and it stores the data of the first row. The second one is Region2 and it stores the data of the second
+row.
+
+So for our example, data change happened in Region1. Puller pulls the data from Region1.
+
+As you can see, the real row change data has some information. The first one and the second one are the start_ts
+and the commit_ts. Because we already know the data is written to TiKV, so the third one is COMMITTED. The fourth
+one is the operation type. It is PUT. Because we insert and update the data, so it is PUT.
+
+Then we can see the key and the value. There also has the old_value. It is the old value before the update. Sometimes
+we need it.
+-->
 
 ---
 
@@ -551,6 +581,19 @@ Pull DDL and Row Change data from TiKV.
 |       ts4: Resolved                        |
 +--------------------------------------------+
 ```
+
+<!--
+The sorter is responsible for sorting the data. It is a very important component. Because we receive the data
+from different regions. So the data is not in order. We need to sort the data by the commit_ts for one table.
+
+As you can see, we merge the data from Region1 and Region2. And then we sort the data by the commit_ts.
+
+Also, we can see the Resolved event. It is a special event. It means the data before this event is sent to the
+TiCDC. No more data will be sent to the TiCDC which has a smaller commit_ts than this event.
+
+This kind of event like a watermark. It is used to advance the progress of the table pipeline. Today I am not gonna
+to cover how to calculate the resolved ts. Because it is too complicated.
+-->
 
 ---
 
@@ -605,6 +648,17 @@ type RowChangedEvent struct {
 </div>
 </div>
 
+<!--
+The mounter is responsible for converting the row kv into row changes. Because the row kv is not easy to handle.
+We have to use the schema information to convert it.
+
+As you can see, we have Value and OldValue. We can use the schema information to convert them into Columns and
+PreColumns.
+
+This kind of row change structure is easy to handle. We can use it to do the downstream data processing. For example,
+we can use it to generate the SQL statement or the Kafka message.
+-->
+
 ---
 
 # Data Flow - Sink
@@ -629,6 +683,14 @@ flowchart LR
   align-items: center;
 }
 </style>
+
+<!--
+The sink is responsible for sending data to the downstream. We can send the data to MySQL/TiDB or Kafka.
+
+We can use the official MySQL driver to send the data to MySQL/TiDB. We can use the Sarama to produce the data to Kafka.
+
+We also have a S3 sink. But it is not ready yet. We will release it in the next version.
+-->
 
 ---
 
@@ -687,12 +749,28 @@ WHERE NAME = 'Jack';
   </div>
 </div>
 
+<!--
+There are some examples of the real SQL or JSON data. We can see the SQL statement is easy to understand.
+We just revert the row change into the SQL statement. You can notice that the SQL statement is not the same
+as the original SQL statement.
+
+And the JSON data is also easy to understand. We use the Canal-JSON format. This format developed by Alibaba.
+Used by many Chinese companies. We can encode it to a Kafka message and send it to Kafka.
+
+It can be easily decoded by the Flink or other data processing frameworks.
+-->
+
 
 ---
 layout: intro
 ---
 
 # Let's check the Data Flow metrics, then you will know the throughput of TiCDC.
+
+<!--
+Now you have known the data flow of TiCDC. Let's check the data flow metrics. Then you will know the throughput of TiCDC.
+As I said before, the throughput is very important performance indicator.
+-->
 
 ---
 layout: iframe
@@ -705,7 +783,12 @@ scale: 0.6
 layout: intro
 ---
 
-# I get the throughput of TiCDC, but how can I know the latency?
+# You get the throughput of TiCDC, but how do you know the latency?
+
+<!--
+Now you have known the throughput of TiCDC. But how do you know the latency?
+There are several metrics to measure the latency. Also, these metrics indicate the latency for different parts of the data flow.
+-->
 
 ---
 layout: iframe
@@ -718,6 +801,15 @@ layout: intro
 ---
 
 # Frequently Asked Questions
+
+<!--
+Let's move on to the frequently asked questions.
+There are many questions about TiCDC. But we can divide them into two categories.
+First, people really care about the latency. They always wanna get lower latency.
+Second, some people care about the technical details. They wanna know why TiCDC is designed in this way.
+
+So I am gonna cover these two categories. Let's start with the latency.
+-->
 
 ---
 layout: two-cols
