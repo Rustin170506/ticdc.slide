@@ -32,6 +32,10 @@ A Deep Dive
   </a>
 </div>
 
+<!--
+Hi, My name is rustin. Today we will talk about TiCDC. It is a tool for replicating the incremental data of TiDB.
+-->
+
 ---
 layout: intro
 ---
@@ -59,11 +63,15 @@ TiKV Team Reviewer.<br/>
 <div flex="~ gap2">
 </div>
 
+<!--
+First, let me introduce myself. I am Rustin Liu, a PingCAPer. I am working on the data replication team. I am also a committer of the TiDB migration team. I am also a reviewer of the TiKV team. You can find me on GitHub, Twitter, and my personal website.
+-->
+
 ---
 layout: center
 ---
 
-<div text-6xl fw100 animate-bounce-alt animate-count-infinite animate-duration-6s>
+<div text-6xl fw100>
   Agenda
 </div>
 
@@ -84,11 +92,20 @@ h1 {
 }
 </style>
 
+<!--
+Today we will talk about TiCDC. We will talk about the architecture of TiCDC and some key metrics. We will also answer some frequently asked questions.
+-->
+
 ---
 layout: intro
 ---
 
-# Why we need TiCDC?
+# What is CDC? & Why we need TiCDC?
+
+<!--
+Before we talk about TiCDC. We must first know what CDC is. The full name of CDC is change data capture. In TiDB, there
+are some scenarios we need a CDC to capture the data from TiDB.
+-->
 
 ---
 
@@ -102,14 +119,14 @@ layout: intro
       <br/>
       <span>&nbsp;&nbsp;&nbsp; - No requirement</span>
       <br/>
-      <span>&nbsp;&nbsp;&nbsp; - Quasi-real-time consistency</span>
+      <span>&nbsp;&nbsp;&nbsp; - Snapshot consistency(sync-point)</span>
       <br/>
-      <span>&nbsp;&nbsp;&nbsp; - Eventual consistency</span>
+      <span>&nbsp;&nbsp;&nbsp; - Eventual consistency(Redo Log)</span>
       <br/>
       <br/>
       <span>Performance Indicators</span>
       <br/>
-      <span>&nbsp;&nbsp;&nbsp; - RP0 &lt 10S</span>
+      <span>&nbsp;&nbsp;&nbsp; - RPO &lt 10S</span>
       <br/>
       <span>&nbsp;&nbsp;&nbsp; - RTO &lt 5min</span>
   </div>
@@ -137,6 +154,27 @@ Sort --> S3: Upload
 
   </div>
 </div>
+
+<!--
+First scenario is data disaster recovery. As you can see, we can fetch data from one TiDB cluster and replicate the data
+to another cluster. So some disaster happens, we can just switch our application to use the downstream TiDB
+cluster.
+
+And we can store the data in S3 and we can recover the data from S3. There are some requirements for this scenario.
+Because we wanna our downstream as an backup. So we need to make sure the data is consistent. There are some levels of
+consistency. The first one is no requirement. It means we don't care about the data consistency. The second one is
+snapshot consistency. It means we can make sure the data is consistent at a specific point in time. The third one is
+eventual consistency. It means we can make sure the data is consistent after a period of time. In TiCDC, we have
+a function called sync-point. It can make sure the data is consistent at a specific point in time.
+
+In this scenario, we need to focus on two performance indicators.
+The first one is RPO. It means recovery point objective. It means how long we tolerate the data loss. In most cases, we
+can guarantee the RPO is less than 10 seconds.
+
+The second one is RTO. It means recovery time objective. It means how long we can recover the cluster to the normal state.
+In most cases, we can recover the cluster to the normal state in 5 minutes. In TiCDC, we have a function called
+redo log. It can make sure the data is consistent after a period of time.
+-->
 
 ---
 
@@ -185,12 +223,29 @@ Push --> S3: Upload
   </div>
 </div>
 
+<!--
+The second scenario is data integration. As you can see, we can fetch data from one TiDB cluster and replicate the data
+to another system.
+
+We can convert the changed data to different formats. For example, we can convert the changed data to Kafka. And we can
+use Canal-JSON or Avro to encode the data. We can also store the data in S3. And we can use CSV to encode the data.
+
+In this scenario, we also need to focus on two performance indicators. The first one is throughput. It means how many
+data we can replicate per second. The second one is latency. It means how big the lag is between the upstream and
+the downstream.
+-->
+
+
 ---
 layout: intro
 ---
 
 # What is TiCDC?
 
+<!--
+Now we know why we need a CDC. Let's talk about TiCDC. How does TiCDC work? Let's take a look at the architecture of
+TiCDC.
+-->
 ---
 
 <div class="arch">
@@ -306,6 +361,26 @@ h1 {
   text-orientation: mixed;
 }
 </style>
+
+<!--
+As you can see, TiCDC is a TiDB cluster. We call each TiCDC instance a capture. Each capture can have multiple goroutines
+to process the data.
+
+We can see there are two types of goroutines. One is the owner. The other one is the processor.
+So it is logical concept. You only can have one owner in a TiCDC cluster. But you can have multiple processors.
+
+The owner is responsible for scheduling the tables and executing the DDL.
+
+The processor is responsible for replicating data for a changefeed. Each processor can only process one changefeed.
+And a changefeed can replicate multiple tables. So we can see there are multiple pipelines in a processor.
+
+The pipeline is responsible for replicating data for a table. Each pipeline has four components. The first one is the
+puller. It is responsible for pulling the data from TiKV. The second one is the sorter. It is responsible for sorting
+the data. The third one is the mounter. It is responsible for decoding the data. The last one is the sink. It is responsible
+for sending the data to the downstream.
+
+As you can see, the core of TiCDC is the table pipeline. So let's take a look at the table pipeline.
+-->
 
 ---
 
