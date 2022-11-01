@@ -93,7 +93,7 @@ h1 {
 </style>
 
 <!--
-Today we will talk about TiCDC. We will talk about the architecture of TiCDC and some key metrics. We will also answer some frequently asked questions.
+Today we will talk about the architecture of TiCDC and some key metrics. We will also answer some frequently asked questions.
 -->
 
 ---
@@ -121,7 +121,7 @@ are some scenarios we need a CDC to capture the data from TiDB.
       <br/>
       <span>&nbsp;&nbsp;&nbsp; - Snapshot consistency(sync-point)</span>
       <br/>
-      <span>&nbsp;&nbsp;&nbsp; - Eventual consistency(Redo Log)</span>
+      <span>&nbsp;&nbsp;&nbsp; - Eventually consistency(Redo Log)</span>
       <br/>
       <br/>
       <span>Performance Indicators</span>
@@ -162,18 +162,22 @@ cluster.
 
 And we can store the data in S3 and we can recover the data from S3. There are some requirements for this scenario.
 Because we wanna our downstream as an backup. So we need to make sure the data is consistent. There are some levels of
-consistency. The first one is no requirement. It means we don't care about the data consistency. The second one is
-snapshot consistency. It means we can make sure the data is consistent at a specific point in time. The third one is
-eventual consistency. It means we can make sure the data is consistent after a period of time. In TiCDC, we have
-a function called sync-point. It can make sure the data is consistent at a specific point in time.
+consistency.
+
+The first one is no requirement. It means we don't care about the data consistency.
+
+The second one is snapshot consistency. It means we can make sure the data is consistent at a specific point in time. In TiCDC, we have a function called sync-point to support it.
+
+
+The third one is eventually consistency. It means we can make sure the data is consistent after a period of time. In TiCDC, we have a function called
+redo log to support it.
 
 In this scenario, we need to focus on two performance indicators.
-The first one is RPO. It means recovery point objective. It means how long we tolerate the data loss. In most cases, we
+The first one is RPO(recovery point objective). It means how long we tolerate the data loss. In most cases, we
 can guarantee the RPO is less than 10 seconds.
 
-The second one is RTO. It means recovery time objective. It means how long we can recover the cluster to the normal state.
-In most cases, we can recover the cluster to the normal state in 5 minutes. In TiCDC, we have a function called
-redo log. It can make sure the data is consistent after a period of time.
+The second one is RTO(recovery time objective.) It means how long we can recover the cluster to the normal state.
+In most cases, we can recover the cluster to the normal state in 5 minutes.
 -->
 
 ---
@@ -232,7 +236,7 @@ use Canal-JSON or Avro to encode the data. We can also store the data in S3. And
 
 In this scenario, we also need to focus on two performance indicators. The first one is throughput. It means how many
 data we can replicate per second. The second one is latency. It means how big the lag is between the upstream and
-the downstream.
+the downstream systems.
 -->
 
 
@@ -243,7 +247,7 @@ layout: intro
 # What is TiCDC?
 
 <!--
-Now we know why we need a CDC. Let's talk about TiCDC. How does TiCDC work? Let's take a look at the architecture of
+Now we know why we need a CDC. Let's talk about TiCDC. Let's take a look at the architecture of
 TiCDC.
 -->
 ---
@@ -363,7 +367,7 @@ h1 {
 </style>
 
 <!--
-As you can see, TiCDC is a TiDB cluster. We call each TiCDC instance a capture. Each capture can have multiple goroutines
+As you can see, TiCDC is a distributed cluster. We call each TiCDC instance a capture. Each capture can have multiple goroutines
 to process the data.
 
 We can see there are two types of goroutines. One is the owner. The other one is the processor.
@@ -541,8 +545,6 @@ Pull DDL and Row Change data from TiKV.
 The puller is responsible for pulling the data from TiKV. Let's suppose we have two regions. The first one is
 Region1 and it stores the data of the first row. The second one is Region2 and it stores the data of the second
 row.
-
-So for our example, data change happened in Region1. Puller pulls the data from Region1.
 
 As you can see, the real row change data has some information. The first one and the second one are the start_ts
 and the commit_ts. Because we already know the data is written to TiKV, so the third one is COMMITTED. The fourth
@@ -856,7 +858,7 @@ quota is 10MB. You can increase it to get a higher throughput if you have enough
 
 The TiKV region count is also an important factor. If we have too many regions, it will cause TiCDC spends too much time to deal with the Resolved TS. So it will cause a big latency. For now we can not solve this problem. We will improve it in the future.
 
-Also, if your workload is too high on the upstream, it will cause a big latency. Because have no ability to catch up with the upstream.
+Also, if your workload is too high on the upstream, it will cause a big latency. Because TiCDC can't catch up with the upstream.
 
 There are also some upstream issues. For example, the region leader transfer. If the region leader transfer happens, it probably causes a big latency. Because TiCDC needs to re-connect to the new leader. And the Resolved TS can not advance. If the Resolved TS can not advance, it will cause a big latency.
 
@@ -865,7 +867,7 @@ resolved TS can not advance. If the locks exist for a long time, it will cause a
 
 There are also some downstream issues. For example, if the downstream database is too slow, it will cause a big latency. Because TiCDC can not send the data to the downstream at a high speed. Also, if there are too many write conflicts, it will cause a big latency. Because TiCDC needs to retry the write operation.
 
-The last reason is the cluster topology. If you deploy TiCDC in a cross-region deployment, you should consider the network issue.
+The last reason is the cluster topology. If you deploy TiCDC in a cross-region deployment, you should consider the network issue. We need to keep low latency between the upstream and the downstream. Sometimes putting TiCDC in the same region with the downstream is a good choice. It helps to reduce the replication latency.
 
 That's most of the reasons for the latency. Let's move on to the technical details.
 -->
@@ -919,5 +921,5 @@ layout: center
 <!--
 Thanks for your listening.
 
-Let's move on to the Q&A session. Do you have any questions? I'll try my best to answer them.
+Let's move on to the Q&A session. Do you have any questions?
 -->
