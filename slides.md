@@ -754,8 +754,8 @@ WHERE NAME = 'Jack';
 
 <!--
 There are some examples of the real SQL or JSON data. We can see the SQL statement is easy to understand.
-We just revert the row change into the SQL statement. You can notice that the SQL statement is not the same
-as the original SQL statement.
+We just revert the row change into the SQL statement. Because we have value and old_value, so we can generate
+the Update statement.
 
 And the JSON data is also easy to understand. We use the Canal-JSON format. This format developed by Alibaba.
 Used by many Chinese companies. We can encode it to a Kafka message and send it to Kafka.
