@@ -779,6 +779,22 @@ As I said before, the throughput is very important performance indicator.
 layout: iframe
 url: https://metricstool.pingcap.com/viz/index.html#!/
 scale: 0.6
+
+<!--
+This is TiCDC's grafana dashboard. We can see the data flow metrics here. This is a collection for those four components.
+
+The first one is Puller. You can see there are tow kinds of events. One is the kv event. The other one is the resolved event.
+The kv event is the data we receive from TiKV. The resolved event is the watermark we receive from TiKV.
+
+The second one is Sorter. We sort the data by the commit_ts. And we output the data to the mounter and sink.
+
+The third one is Mounter. We convert the row kv into row changes. And we output the data to the sink. So it's just output the row changes.
+
+The last one is Sink. We send the data to the downstream. We can see the data is sent to MySQL/TiDB or Kafka. We measure the received events and the flushed events. Because sometimes the data is not sent to the downstream immediately. We have to buffer it. Like if the data have some conflicts, we have to execute them one by one. So it will cause some delay.
+
+We also have a special panel for sorter. Because if we can not write to downstream immediately, we have to buffer the data. So we buffer it in disk. We have to measure the disk usage. If the disk usage is too high, it means probably your sink is too slow.
+You should find a way to speed up the sink.
+-->
 ---
 
 
@@ -797,6 +813,17 @@ There are several metrics to measure the latency. Also, these metrics indicate t
 layout: iframe
 url: https://metricstool.pingcap.com/viz/index.html#!/
 scale: 0.6
+
+<!--
+For the latency, you can focus on this row. We have a lag analyze row. We can see the latency for different parts of the TiCDC.
+
+The first metric is checkpoint ts lag. It is the latency between the upstream and the downstream. If you found the checkpoint ts lag is very big, it means the downstream is too slow. Maybe you have some problems in sink. Maybe the sink throughput is too low.
+Maybe there is too many conflicts in the sink. So you should find a way to speed up the sink.
+
+The second metric is resolved ts lag. It is a internal indicator. For example, we use it to control the other processors. If owner has not executed the DDL, so we can not execute the DML after this DDL. We use a global resolved ts to control it. So it is a internal indicator.
+
+-->
+
 ---
 
 ---
