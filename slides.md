@@ -413,7 +413,7 @@ finally to the sink. So we can go through the pipeline step by step and see how 
 <div class="grid grid-cols-2 gap-4 items-center h-100">
   <div class="object-contain h-full of-hidden">
 
-```sql {0|1|3-7|8-14|0}
+```sql
 -- Create the following table structure--
 
 CREATE TABLE TEST(
@@ -433,7 +433,7 @@ CREATE TABLE TEST(
   </div>
   <div class="object-contain h-full of-hidden w-full">
 
-```sql {0|1|3-4|6-8}
+```sql
 -- Execute these two DMs in TiDB --
 
 INSERT INTO TEST (NAME,AGE)
@@ -465,7 +465,7 @@ in the table pipeline. But before that, let's check the real data structure in T
 <div class="grid grid-cols-2 gap-4 items-center h-100">
   <div class="object-contain h-full of-hidden">
 
-```sql {0|2-3|4-9|0}
+```sql
 
 INSERT INTO TEST (NAME,AGE)
 VALUES ('Jack',20);
@@ -481,7 +481,7 @@ VALUES ('Jack',20);
   </div>
   <div class="object-contain h-full of-hidden w-full">
 
-```sql {0|1-4|5-9}
+```sql
 UPDATE TEST
 SET AGE = 25
 WHERE NAME = 'Jack';
@@ -499,8 +499,9 @@ WHERE NAME = 'Jack';
 
 <!--
 For the insert statement, we can see the key is TEST_Jack. The value is Jack | 20. The key is the table name and the
-primary key. The value is the primary key and the columns. For the update statement, we can see the key is still
-TEST_Jack. But the value is Jack | 25. So we can see the value is updated.
+primary key.
+
+For the update statement, we can see the key is still TEST_Jack. But the value is Jack | 25. So we can see the value is updated.
 
 This just a simplified example. In fact, TiKV uses a more complex key-value structure. But it is not important for
 this talk. So we can ignore it.
