@@ -823,8 +823,8 @@ layout: two-cols
   - Split the big transaction into small ones.(Only v6.1.0+)
 
 - Throughput too low
-  - Table Memory Quota
-  - Sink Worker Count
+  - Table memory quota
+  - Sink worker count
   - Upstream TiKV region count (Big single table)
   - High workload on Upstream
 
@@ -845,6 +845,30 @@ layout: two-cols
 - Cluster topology
   - Cross-Region Deployment
 
+<!--
+There are many reasons for the latency. Let's start with the big transaction. If the transaction is too big, it will take a long time to replicate it to the downstream.
+
+So it will cause a big latency. We can split the big transaction into small ones. This feature is only available in v6.1.0+.
+
+The second reason is the throughput is too low. We can increase the throughput by increasing the table memory quota, the sink worker count. As I said before, we replicate the data by table. So we need to control the memory usage of each table. The default
+quota is 10MB. You can increase it to get a higher throughput if you have enough memory. You can also increase the sink worker count to get a higher throughput. Because more workers can send the data to the downstream at the same time.
+
+The TiKV region count is also an important factor. If we have too many regions, it will cause TiCDC spends too much time to deal with the Resolved TS. So it will cause a big latency. For now we can not solve this problem. We will improve it in the future.
+
+Also, if your workload is too high on the upstream, it will cause a big latency. Because have no ability to catch up with the upstream.
+
+There are also some upstream issues. For example, the region leader transfer. If the region leader transfer happens, it probably causes a big latency. Because TiCDC needs to re-connect to the new leader. And the Resolved TS can not advance. If the Resolved TS can not advance, it will cause a big latency.
+
+Sometime if your TiDB cluster is crashed, it probably causes a big latency. Because it may leave some locks on the TiKV. And the
+resolved TS can not advance. If the locks exist for a long time, it will cause a big latency. But TiCDC will try to resolve the locks if it can.
+
+There are also some downstream issues. For example, if the downstream database is too slow, it will cause a big latency. Because TiCDC can not send the data to the downstream at a high speed. Also, if there are too many write conflicts, it will cause a big latency. Because TiCDC needs to retry the write operation.
+
+The last reason is the cluster topology. If you deploy TiCDC in a cross-region deployment, you should consider the network issue.
+
+That's most of the reasons for the latency. Let's move on to the technical details.
+-->
+
 ---
 
 # Why this design?
@@ -852,19 +876,47 @@ layout: two-cols
 <br/>
 
 - Data Replication Method
-  - Raft Learner VS Raft Log Event
+  - Raft Learner Vs. Raft Log Event
 
 - Data Order
   - Do we really need to keep the order of the data?
 
 - Write method
-  - SQL VS Row KV
+  - SQL Vs. Row KV
 
 - Scalability
   - Why scheduler based on table count?
+
+<!--
+There are several technical details. Let's start with the data replication method. We can use the Raft Learner to replicate the data. Or we can use the Raft Log Event to replicate the data. We choose the Raft Log Event. Because as I said before, we need to
+consider the data integrity and also provide different consistency guarantees. So we can not simply use the Raft Learner.
+
+And I think there are no big performance difference between the two methods. So we choose the Raft Log Event.
+
+About the data order, many people care about the data order and many people don't. So recently we are discussing whether we should keep the data order by default. Maybe we can make it optional in the future.
+
+About the write method, we choose the SQL method. Because it is easy to extend. For example, we can replicate the data to the any MySQL compatible database. So we choose the SQL method instead of the Row KV method. It more flexible.
+
+The last question is about the scalability. Why we schedule the tables based on the table count? Because as you can see, we replicate the data by table. So we simply schedule the tables based on the table count. It is easy to understand and easy to implement.
+
+But sometimes we suffer from the uneven workload. For example, if we have a big table and a small table. The big table will occupy most of the resources. And TiCDC treats them equally. So we are also discussing how to improve it in the future.
+
+Maybe we can schedule the tables based on the workload. But it is not easy to implement. So we are still discussing it.
+-->
 
 ---
 layout: center
 ---
 
-# Thanks!
+# Q&A
+
+<br/>
+<br/>
+
+## Do you have any questions?
+
+<!--
+Thanks for your listening.
+
+Let's move on to the Q&A session. Do you have any questions? I'll try my best to answer them.
+-->
