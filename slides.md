@@ -820,7 +820,7 @@ For the latency, you can focus on this row. We have a lag analyze row. We can se
 The first metric is checkpoint ts lag. It is the latency between the upstream and the downstream. If you found the checkpoint ts lag is very big, it means the downstream is too slow. Maybe you have some problems in sink. Maybe the sink throughput is too low.
 Maybe there is too many conflicts in the sink. So you should find a way to speed up the sink.
 
-The second metric is resolved ts lag. It is a internal indicator. For example, we use it to control the other processors. If owner has not executed the DDL, so we can not execute the DML after this DDL. We use a global resolved ts to control it. So it is a internal indicator.
+The second metric is resolved ts lag. It is a internal indicator. For example, we use it to control the other processors. If owner has not executed the DDL, so we can not execute the DML after this DDL. We use a global resolved ts to control it.
 
 -->
 
