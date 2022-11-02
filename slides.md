@@ -64,7 +64,10 @@ TiKV Team Reviewer.<br/>
 </div>
 
 <!--
-First, let me introduce myself. I am Rustin Liu, a PingCAPer. I am working on the data replication team. I am also a committer of the TiDB migration team. I am also a reviewer of the TiKV team. You can find me on GitHub, Twitter, and my personal website.
+First, let me introduce myself. I'm Rustin.
+Of course, I'm a PingCAPer. I'm working on the data replication team.
+I'm also a committer of the TiDB migration team. I'm also a reviewer of the TiKV team.
+You can find me on GitHub, Twitter, and my personal website.
 -->
 
 ---
@@ -82,6 +85,7 @@ layout: center
 
   - TiCDC Architecture + Key Metrics
   - Frequently Asked Questions
+  - Q&A
 
   </div>
 </div>
@@ -93,7 +97,9 @@ h1 {
 </style>
 
 <!--
-Today we will talk about the architecture of TiCDC and some key metrics. We will also answer some frequently asked questions.
+Today we will talk about the architecture of TiCDC and some key metrics.
+And I will also answer some frequently asked questions.
+At last, we will have a Q&A session. So if you have any questions, please feel free to ask in the Q&A session.
 -->
 
 ---
@@ -103,8 +109,8 @@ layout: intro
 # What is CDC? & Why we need TiCDC?
 
 <!--
-Before we talk about TiCDC. We must first know what CDC is. The full name of CDC is change data capture. In TiDB, there
-are some scenarios we need a CDC to capture the data from TiDB.
+Before we talk about TiCDC. We have to know what CDC is first.
+The full name of CDC is change data capture. In TiDB, there are some scenarios we need a CDC to capture the data from TiDB.
 -->
 
 ---
@@ -160,21 +166,21 @@ First scenario is data disaster recovery. As you can see, we can fetch data from
 to another cluster. So some disaster happens, we can just switch our application to use the downstream TiDB
 cluster.
 
-And we can store the data in S3 and we can recover the data from S3. There are some requirements for this scenario.
-Because we wanna our downstream as an backup. So we need to make sure the data is consistent. There are some levels of
-consistency.
+Also we can store the data in S3 and we can recover the data from S3.
 
-The first one is no requirement. It means we don't care about the data consistency.
+There are some requirements for this scenario. Because we wanna our downstream more useful. Like we can send some read traffic
+to the downstream TiDB cluster. So we need to make sure the data is consistent. There are some levels of consistency.
 
-The second one is snapshot consistency. It means we can make sure the data is consistent at a specific point in time. In TiCDC, we have a function called sync-point to support it.
+The first one is no requirement. It means we don't care about the data consistency. We just wanna the data as soon as possible.
+
+The second one is snapshot consistency. It means we can make sure the data is consistent at a specific point in time. In TiCDC, we have a function called sync-point to support it. You can choose a specific timestamp and use TiDB's stale read feature to read the data at that timestamp.
 
 
-The third one is eventually consistency. It means we can make sure the data is consistent after a period of time. In TiCDC, we have a function called
-redo log to support it.
+The third one is eventually consistency. It means we can make sure the data is consistent after a period of time. In TiCDC, we have a function called redo log to support it. After the disaster happens, we can just replay the redo log to the downstream TiDB cluster.
 
 In this scenario, we need to focus on two performance indicators.
 The first one is RPO(recovery point objective). It means how long we tolerate the data loss. In most cases, we
-can guarantee the RPO is less than 10 seconds.
+can guarantee the RPO is less than 10 seconds. It means at most 10 seconds of data loss.
 
 The second one is RTO(recovery time objective.) It means how long we can recover the cluster to the normal state.
 In most cases, we can recover the cluster to the normal state in 5 minutes.
@@ -229,14 +235,16 @@ Push --> S3: Upload
 
 <!--
 The second scenario is data integration. As you can see, we can fetch data from one TiDB cluster and replicate the data
-to another system.
+to another system. It's can be Kafka, S3, or other systems. Not only a OLTP database.
 
-We can convert the changed data to different formats. For example, we can convert the changed data to Kafka. And we can
-use Canal-JSON or Avro to encode the data. We can also store the data in S3. And we can use CSV to encode the data.
+We can convert the changed data to different formats. For example, we can convert the changed data to Kafka message.
+And we can use Canal-JSON or Avro to encode the data. We can also store the data in S3. We can use CSV to encode the data.
 
 In this scenario, we also need to focus on two performance indicators. The first one is throughput. It means how many
 data we can replicate per second. The second one is latency. It means how big the lag is between the upstream and
 the downstream systems.
+
+Some users really care about the latency. Because they wanna the data is as fresh as possible.
 -->
 
 
@@ -247,7 +255,7 @@ layout: intro
 # What is TiCDC?
 
 <!--
-Now we know why we need a CDC. Let's talk about TiCDC. Let's take a look at the architecture of
+Now we know why we need a CDC. Let's talk about TiCDC. We'll take a look at the architecture of
 TiCDC.
 -->
 ---
@@ -367,23 +375,33 @@ h1 {
 </style>
 
 <!--
-As you can see, TiCDC is a distributed cluster. We call each TiCDC instance a capture. Each capture can have multiple goroutines
+As you can known, TiCDC is a distributed cluster. We call each TiCDC instance a capture. Each capture can have multiple roles
 to process the data.
 
-We can see there are two types of goroutines. One is the owner. The other one is the processor.
-So it is logical concept. You only can have one owner in a TiCDC cluster. But you can have multiple processors.
+We can see there are two types of roles. One is the owner. The other one is the processor.
+So it's just logical concept. Not physical concept.
+You only can have one owner in a TiCDC cluster. But you can have multiple processors.
 
 The owner is responsible for scheduling the tables and executing the DDL.
 
 The processor is responsible for replicating data for a changefeed. Each processor can only process one changefeed.
-And a changefeed can replicate multiple tables. So we can see there are multiple pipelines in a processor.
+And a changefeed can replicate multiple tables.
 
-The pipeline is responsible for replicating data for a table. Each pipeline has four components. The first one is the
-puller. It is responsible for pulling the data from TiKV. The second one is the sorter. It is responsible for sorting
-the data. The third one is the mounter. It is responsible for decoding the data. The last one is the sink. It is responsible
-for sending the data to the downstream.
+Maybe you have a question. What is the Changefeed? You can think it's just a configuration for some tables. Users can
+write a configuration file to describe the changefeed. And then TiCDC will replicate the data for the tables in the
+changefeed.
 
-As you can see, the core of TiCDC is the table pipeline. So let's take a look at the table pipeline.
+We can see there are multiple pipelines in a processor. The pipeline is responsible for replicating data for a table. Each pipeline has four components.
+
+The first one is the puller. It is responsible for pulling the data from TiKV.
+
+The second one is the sorter. It is responsible for sorting the data.
+
+The third one is the mounter. It is responsible for decoding the data.
+
+The last one is the sink. It is responsible for sending the data to the downstream.
+
+As you can see, the core of TiCDC is the table pipeline. So let's take a deeper look at the table pipeline.
 -->
 
 ---
@@ -402,8 +420,9 @@ flowchart LR
 ```
 
 <!--
-The table pipeline looks like a pipe. The data flows from the puller to the sorter, and then to the mounter, and
-finally to the sink. So we can go through the pipeline step by step and see how it replicates data.
+The table pipeline looks like a pipe. It's very simple and straightforward.
+The data flows from the puller to the sorter, and then to the mounter, and finally to the sink.
+So we can go through the pipeline step by step and see how it replicates data.
 -->
 
 ---
@@ -454,7 +473,9 @@ WHERE NAME = 'Jack';
 
 <!--
 This is an example. We create a table named TEST. It has two columns. The first one is NAME. It is the primary key.
-The second one is AGE. We insert a row into the table. And then we update that row. So we can trace the data flow
+The second one is AGE.
+
+We insert a row into the table. And then we update that row. So we can trace the data flow
 in the table pipeline. But before that, let's check the real data structure in TiKV.
 -->
 
@@ -542,16 +563,17 @@ Pull DDL and Row Change data from TiKV.
 ```
 
 <!--
-The puller is responsible for pulling the data from TiKV. Let's suppose we have two regions. The first one is
+Puller, Let's suppose we have two regions. The first one is
 Region1 and it stores the data of the first row. The second one is Region2 and it stores the data of the second
-row.
+row. Puller will pull the data from TiKV. And then it will send the data to the sorter.
 
-As you can see, the real row change data has some information. The first one and the second one are the start_ts
-and the commit_ts. Because we already know the data is written to TiKV, so the third one is COMMITTED. The fourth
-one is the operation type. It is PUT. Because we insert and update the data, so it is PUT.
+As you can see, the real row change data has some extra information.
 
-Then we can see the key and the value. There also has the old_value. It is the old value before the update. Sometimes
-we need it.
+The first one and the second one are the start_ts and the commit_ts. And we can see it already committed.
+Both of them are put operations. Because we insert and update the data, so it's PUT.
+
+Then we can see the key and the value. There also has an old_value. It's the old value before the update. Sometimes
+we need it. Like users want to know the old value before the update. So we can keep it.
 -->
 
 ---
@@ -586,7 +608,7 @@ we need it.
 ```
 
 <!--
-The sorter is responsible for sorting the data. It is a very important component. Because we receive the data
+Sorter, It is a very important component. Because we receive the data
 from different regions. So the data is not in order. We need to sort the data by the commit_ts for one table.
 
 As you can see, we merge the data from Region1 and Region2. And then we sort the data by the commit_ts.
@@ -594,8 +616,11 @@ As you can see, we merge the data from Region1 and Region2. And then we sort the
 Also, we can see the Resolved event. It is a special event. It means the data before this event is sent to the
 TiCDC. No more data will be sent to the TiCDC which has a smaller commit_ts than this event.
 
-This kind of event like a watermark. It is used to advance the progress of the table pipeline. Today I am not gonna
-to cover how to calculate the resolved ts. Because it is too complicated.
+This kind of event like a watermark. It's a very common pattern in the stream processing system. So we can just
+imagine TiCDC as a stream processing system but for TiDB.
+
+It is used to advance the progress of the table pipeline. Today I'm not gonna to cover how to calculate the resolved ts.
+Because it is too complicated.
 -->
 
 ---
@@ -652,8 +677,8 @@ type RowChangedEvent struct {
 </div>
 
 <!--
-The mounter is responsible for converting the row kv into row changes. Because the row kv is not easy to handle.
-We have to use the schema information to convert it.
+Mounter. Because the row kv is not easy to handle.
+We have to use the schema information to convert it. We can not directly send a bunch of bytes to the downstream.
 
 As you can see, we have Value and OldValue. We can use the schema information to convert them into Columns and
 PreColumns.
@@ -688,9 +713,11 @@ flowchart LR
 </style>
 
 <!--
-The sink is responsible for sending data to the downstream. We can send the data to MySQL/TiDB or Kafka.
+Sink. We can send the data to MySQL/TiDB or Kafka.
 
-We can use the official MySQL driver to send the data to MySQL/TiDB. We can use the Sarama to produce the data to Kafka.
+We can use the official MySQL driver to send the data to MySQL/TiDB. It's very convenient.
+
+We can use the Sarama as a producer to produce the data to Kafka.
 
 We also have a S3 sink. But it is not ready yet. We will release it in the next version.
 -->
@@ -779,6 +806,7 @@ As I said before, the throughput is very important performance indicator.
 layout: iframe
 url: https://metricstool.pingcap.com/viz/index.html#!/
 scale: 0.6
+---
 
 <!--
 This is TiCDC's grafana dashboard. We can see the data flow metrics here. This is a collection for those four components.
@@ -795,8 +823,6 @@ The last one is Sink. We send the data to the downstream. We can see the data is
 We also have a special panel for sorter. Because if we can not write to downstream immediately, we have to buffer the data. So we buffer it in disk. We have to measure the disk usage. If the disk usage is too high, it means probably your sink is too slow.
 You should find a way to speed up the sink.
 -->
----
-
 
 ---
 layout: intro
@@ -806,6 +832,8 @@ layout: intro
 
 <!--
 Now you have known the throughput of TiCDC. But how do you know the latency?
+Users probably just saw a bunch of rows sent to the downstream. But they only care about the difference between the upstream and the downstream.
+
 There are several metrics to measure the latency. Also, these metrics indicate the latency for different parts of the data flow.
 -->
 
@@ -813,6 +841,8 @@ There are several metrics to measure the latency. Also, these metrics indicate t
 layout: iframe
 url: https://metricstool.pingcap.com/viz/index.html#!/
 scale: 0.6
+name: "ts"
+---
 
 <!--
 For the latency, you can focus on this row. We have a lag analyze row. We can see the latency for different parts of the TiCDC.
@@ -820,11 +850,22 @@ For the latency, you can focus on this row. We have a lag analyze row. We can se
 The first metric is checkpoint ts lag. It is the latency between the upstream and the downstream. If you found the checkpoint ts lag is very big, it means the downstream is too slow. Maybe you have some problems in sink. Maybe the sink throughput is too low.
 Maybe there is too many conflicts in the sink. So you should find a way to speed up the sink.
 
-The second metric is resolved ts lag. It is a internal indicator. For example, we use it to control the other processors. If owner has not executed the DDL, so we can not execute the DML after this DDL. We use a global resolved ts to control it.
+The second metric is resolved ts lag. It is a internal indicator. It's a very complicated metric. Also it's not easy to understand.
 
+Its first meaning is the lag between the table's resolved ts and the current tso. You know, we received the resolved ts from TiKV. But it's for each region. We have to calculate the minimum resolved ts for the whole table.
+
+Its Its second function is to control the other processors. In most cases, we can use it for DDL.
+If owner has not executed the DDL, so we can't execute the DML after this DDL. We use a global resolved ts to control it.
+So if a DDL can not be executed, the resolved ts lag may be keep increasing.
+
+We also usr it for Redo log and sync point. But it really difficult to understand. So I will not talk about it here.
+
+The third metric is TiKV's min resolved ts lag. It is the progress of one region. You can use it to locate the problem of
+TiKV. If the min resolved ts lag is very big, maybe there is something wrong with TiKV. Like we can't calculate the resolved ts
+for some regions, because we got some locks on those regions.
+
+You can locate the location of the problem by those metrics. Does it happen on the downstream? Or does it cause by internal problems? Does it happen on TiKV?
 -->
-
----
 
 ---
 layout: intro
@@ -838,7 +879,7 @@ There are many questions about TiCDC. But we can divide them into two categories
 First, people really care about the latency. They always wanna get lower latency.
 Second, some people care about the technical details. They wanna know why TiCDC is designed in this way.
 
-So I am gonna cover these two categories. Let's start with the latency.
+So I'm gonna cover these two categories. Let's start with the latency.
 -->
 
 ---
@@ -855,7 +896,7 @@ layout: two-cols
 - Throughput too low
   - Table memory quota
   - Sink worker count
-  - Upstream TiKV region count (Big single table)
+  - Upstream TiKV region count (Big single table, 20w+ regions)
   - High workload on Upstream
 
 ::right::
@@ -876,23 +917,26 @@ layout: two-cols
   - Cross-Region Deployment
 
 <!--
-There are many reasons for the latency. Let's start with the big transaction. If the transaction is too big, it will take a long time to replicate it to the downstream.
+There are many reasons for the high latency.
 
+Let's start with the big transaction. If the transaction is too big, it will take a long time to replicate it to the downstream.
 So it will cause a big latency. We can split the big transaction into small ones. This feature is only available in v6.1.0+.
 
-The second reason is the throughput is too low. We can increase the throughput by increasing the table memory quota, the sink worker count. As I said before, we replicate the data by table. So we need to control the memory usage of each table. The default
-quota is 10MB. You can increase it to get a higher throughput if you have enough memory. You can also increase the sink worker count to get a higher throughput. Because more workers can send the data to the downstream at the same time.
+The second reason is the throughput is too low. We can increase the throughput by increasing the table memory quota. As I said before, we replicate the data by table. So we need to control the memory usage of each table. This is a configuration for each table.
+The default quota is 10MB. You can increase it to get a higher throughput if you have enough memory.
+
+You can also increase the sink worker count to get a higher throughput. This is a configuration for the Sink. In TiCDC, we have multiple sink workers. We can send the data parallelly if there are no conflicts. So we can increase the sink worker count to get a higher throughput. Because more workers can send the data to the downstream at the same time.
 
 The TiKV region count is also an important factor. If we have too many regions, it will cause TiCDC spends too much time to deal with the Resolved TS. So it will cause a big latency. For now we can not solve this problem. We will improve it in the future.
 
-Also, if your workload is too high on the upstream, it will cause a big latency. Because TiCDC can't catch up with the upstream.
+Also, if your workload is too high on the upstream, it will cause a big latency. Because TiCDC just can't catch up with the upstream.
 
-There are also some upstream issues. For example, the region leader transfer. If the region leader transfer happens, it probably causes a big latency. Because TiCDC needs to re-connect to the new leader. And the Resolved TS can not advance. If the Resolved TS can not advance, it will cause a big latency.
+There are also some upstream issues. For example, the region leader transfer. If the region leader transfer happens too frequently, it probably causes a big latency. Because TiCDC needs to re-connect to the new leader. And the Resolved TS can not advance. If the Resolved TS can not advance, it will cause a big latency.
 
 Sometime if your TiDB cluster is crashed, it probably causes a big latency. Because it may leave some locks on the TiKV. And the
 resolved TS can not advance. If the locks exist for a long time, it will cause a big latency. But TiCDC will try to resolve the locks if it can.
 
-There are also some downstream issues. For example, if the downstream database is too slow, it will cause a big latency. Because TiCDC can not send the data to the downstream at a high speed. Also, if there are too many write conflicts, it will cause a big latency. Because TiCDC needs to retry the write operation.
+There are also some downstream issues. For example, if the downstream database is too slow, it will cause a big latency. Because TiCDC can not send the data to the downstream at a high speed. Also, if there are too many write conflicts, it will cause a big latency. Because TiCDC needs to retry the write operation again and again.
 
 The last reason is the cluster topology. If you deploy TiCDC in a cross-region deployment, you should consider the network issue. We need to keep low latency between the upstream and the downstream. Sometimes putting TiCDC in the same region with the downstream is a good choice. It helps to reduce the replication latency.
 
@@ -918,20 +962,28 @@ That's most of the reasons for the latency. Let's move on to the technical detai
   - Why scheduler based on table count?
 
 <!--
-There are several technical details. Let's start with the data replication method. We can use the Raft Learner to replicate the data. Or we can use the Raft Log Event to replicate the data. We choose the Raft Log Event. Because as I said before, we need to
-consider the data integrity and also provide different consistency guarantees. So we can not simply use the Raft Learner.
+There are several technical details. A lot of users argue about the design of TiCDC. So I'm gonna cover them.
+
+Let's start with the data replication method. We can use the Raft Learner to replicate the data. Or we can use the Raft Log Event to replicate the data. We choose the latter one.
+
+Because as I said before, we need to consider the data integrity and also provide different consistency guarantees. So we can not simply use the Raft Learner. Also if you wanna send the data to Kafka, you still have to deal with the schema information.
+And convert the data, not just send the raw data.
 
 And I think there are no big performance difference between the two methods. So we choose the Raft Log Event.
 
-About the data order, many people care about the data order and many people don't. So recently we are discussing whether we should keep the data order by default. Maybe we can make it optional in the future.
+About the data order, many people care about the data order and many people don't. So recently we are discussing whether we should keep the data order by default.
+Like some users use Kafka, they don't care about the data order. Because maybe they reorder it by themselves.
+So maybe we can make it optional in the future.
 
 About the write method, we choose the SQL method. Because it is easy to extend. For example, we can replicate the data to the any MySQL compatible database. So we choose the SQL method instead of the Row KV method. It more flexible.
 
 The last question is about the scalability. Why we schedule the tables based on the table count? Because as you can see, we replicate the data by table. So we simply schedule the tables based on the table count. It is easy to understand and easy to implement.
 
-But sometimes we suffer from the uneven workload. For example, if we have a big table and a small table. The big table will occupy most of the resources. And TiCDC treats them equally. So we are also discussing how to improve it in the future.
+But sometimes we suffer from the uneven workload. For example, if we have a big table and a small table. The big table or hot table will occupy most of the resources. And TiCDC treats them equally. So we are also discussing how to improve it in the future.
 
-Maybe we can schedule the tables based on the workload. But it is not easy to implement. So we are still discussing it.
+Maybe we can schedule the tables based on the workload. It is more reasonable. But it is not easy to implement. So we are still discussing it.
+
+Maybe we can split the table and replicate the data on different TiCDC instances. It is also a good choice. But it is extremely hard to implement. So please stay tuned. We will improve it in the future.
 -->
 
 ---
