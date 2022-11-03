@@ -900,11 +900,11 @@ layout: two-cols
 <br/>
 
 - Big Transaction
-  - Split the big transaction into small ones.(Only v6.1.0+)
+  - [Split the big transaction into small ones.(Only v6.1.0+)](https://github.com/pingcap/tiflow/blob/13c2fb9274c8e9d613090f3fc5a639679472c46f/pkg/config/sink.go#L88)
 
 - Throughput too low
-  - Table memory quota
-  - Sink worker count
+  - [Table memory quota](https://github.com/pingcap/tiflow/blob/13c2fb9274c8e9d613090f3fc5a639679472c46f/pkg/config/server_config.go#L177)
+  - [Sink worker count](https://docs.pingcap.com/tidb/stable/manage-ticdc#configure-sink-uri-with-mysqltidb)
   - Upstream TiKV region count (Big single table, 20w+ regions)
   - High workload on Upstream
 
