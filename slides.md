@@ -804,7 +804,7 @@ As I said before, the throughput is very important performance indicator.
 
 ---
 layout: iframe
-url: https://metricstool.pingcap.com/viz/index.html#!/
+url: https://metricstool.pingcap.net/viz/index.html#!/
 scale: 0.6
 ---
 
@@ -839,7 +839,7 @@ There are several metrics to measure the latency. Also, these metrics indicate t
 
 ---
 layout: iframe
-url: https://metricstool.pingcap.com/viz/index.html#!/
+url: https://metricstool.pingcap.net/viz/index.html#!/
 scale: 0.6
 name: "ts"
 ---
