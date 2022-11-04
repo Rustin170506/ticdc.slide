@@ -846,6 +846,8 @@ But we can check the general metrics here. You can see the output events count p
 
 And another panel is for the database. We call it transaction sink. In this row, you should focus on two panels. The first one is conflict detect duration, it's very important. If you have too many rows change conflict, it will cause we send it to downstream one by one. It will cause a lot of delay. Sometimes, it related to your workload. The second one is flush duration, if it's high, it probably means your downstream is too slow. So you should speed up the downstream.
 
+The last one is for the Kafka. We call it MQ sink. It's similar to the transaction sink. You need to focus on the duration panel. There is no conflict detect in Kafka. Because we send the data row by row.
+
 -->
 
 ---
@@ -871,16 +873,28 @@ name: "ts"
 <!--
 For the latency, you can focus on this row. We have a lag analyze row. We can see the latency for different parts of the TiCDC.
 
-The first metric is checkpoint ts lag. It's the latency between the upstream and the downstream. If you found the checkpoint ts lag is very big, it means the downstream is too slow. Maybe you have some problems in sink. Maybe the sink throughput is too low.
-And maybe there is too many conflicts in the sink. So you should find a way to speed up the sink.
+The first metric is checkpoint ts lag. It's the latency between the upstream and the downstream. If you found the checkpoint ts lag is very big, it means the downstream and the upstream are very far away.
+Maybe you have some problems in sink. Maybe the sink throughput is too low.
+And maybe there is too many conflicts in the sink. So you should find a way to locate the problem.
 
 The second metric is resolved ts lag. It is a internal indicator. It's a very complicated metric. Also it's not easy to explain.
 
-It's the lag between the table's resolved ts and the current tso. You know, we received the resolved ts from TiKV. But it's for each region. We have to calculate the minimum resolved ts for the whole table. So this metric is the lag between the minimum resolved ts and the current tso.
+You can think it's the lag between the table's resolved ts and the current tso. You know, we received the resolved ts from TiKV. But it's for each region. We have to calculate the minimum resolved ts for the whole table. Because we send the data by table.
 
-We also use it for Redo log and sync point and DDL. But it really difficult to understand. So I'll not talk about it here.
+We also use it for Redo log and sync point and DDL. But it really difficult to understand.
 
-TODO
+Let me try to explain how we execute the DDL. DDL is a special event. We have to execute it one by one on Owner. You can imagine, if we execute the DDL on different captures, it will cause some conflicts. So we introduce a concept in TiCDC. Called Global Resolved Ts. It's for all tables. Like a barrier. We use it to prevent other tables execute the DMLs before the DDL is executed.
+
+For example, if you have a DDL stuck in the Owner, then this table's Global Resolved Ts will be stuck. And other tables can't execute the DMLs. So probably your checkpoint ts lag and resolved ts lag will increase.
+
+I guess you guys have a question. We can replicate data for multiple tables. So how do we calculate the Checkpoint Ts and Resolved Ts?
+
+Actually, we use the slowest table's Checkpoint Ts and Resolved Ts as the global Checkpoint Ts and Resolved Ts. So if you have a table stuck, it will cause the global Checkpoint Ts and Resolved Ts stuck.
+
+And we also have two panels for it. The first one is Min Resolved table ID, you can see the table ID here. If you found the metic looks like a line, it means the table is stuck. You can use the table ID to find the root cause. We only have table ID instead of table name. Because the table name may change. But the table ID will not change. You can search the table name in the log by the table ID.
+
+The second one is Min checkpoint table ID metric. It's similar to the Min Resolved table ID metric. You can use it to find the root cause.
+
 -->
 
 ---
