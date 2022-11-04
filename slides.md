@@ -891,7 +891,9 @@ I guess you guys have a question. We can replicate data for multiple tables. So 
 
 Actually, we use the slowest table's Checkpoint Ts and Resolved Ts as the global Checkpoint Ts and Resolved Ts. So if you have a table stuck, it will cause the global Checkpoint Ts and Resolved Ts stuck.
 
-And we also have two panels for it. The first one is Min Resolved table ID, you can see the table ID here. If you found the metic looks like a line, it means the table is stuck. You can use the table ID to find the root cause. We only have table ID instead of table name. Because the table name may change. But the table ID will not change. You can search the table name in the log by the table ID.
+Sp we added two panels for them. To help you find the stuck table.
+
+The first one is Min Resolved table ID, you can see the table ID here. If you found the metic looks like a line, it means the table is stuck. You can use the table ID to find the root cause. We only have table ID instead of table name. Because the table name may change. But the table ID will not change. You can search the table name in the log by the table ID.
 
 The second one is Min checkpoint table ID metric. It's similar to the Min Resolved table ID metric. You can use it to find the root cause and find which table is stuck.
 
