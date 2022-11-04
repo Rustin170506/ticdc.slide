@@ -832,19 +832,27 @@ The kv event is the data we receive from TiKV. The resolved event is the waterma
 If you found the kv event is too less and the resolved event is too much, it means you have a lot of regions on the TiKV.
 
 The second one is Sorter. We sort the data by the commit_ts. And we output the data to the mounter and sink.
-And you probably found not only the kv event, but also the resolved event is here. Because the sorter will output the resolved event to advance the sink.
+And you probably found not only the kv event, but also the resolved event is here. Because the sorter will output the resolved event to advance the sink. So we sort them together.
 
-We also have a special panel for sorter. Because if we can't write the data to downstream immediately, we have to buffer the data. So we buffer it in disk. We have to measure the disk usage. If the disk usage is too high, it means probably your sink is too slow. A bunch of data is waiting to be sent to the downstream. You should find a way to speed up the sink.
+We also have a special row for sorter. Because if we can't write the data to downstream immediately, we have to buffer the data. So we buffer it in disk. We have to measure the disk usage. If the disk usage is too high, it means probably your sink is too slow. A bunch of data is waiting to be sent to the downstream. You should find a way to speed up the sink.
 
 The third one is Mounter. We convert the row kv into row changes. And we output the data to the sink. So it's just output the row changes.
 
-The last one is Sink. We send the data to the downstream. We can see the data is sent to TiDB or Kafka. We measure the received events and the flushed events. Because sometimes the data is not sent to the downstream immediately. We have to buffer it. Like if the data have some conflicts, we have to execute them one by one. So it will cause some delay.
+The last one is Sink. We can send the data to TiDB or Kafka. We measure the received rows and the flushed rows. Because sometimes the data is not sent to the downstream immediately. We have to buffer it. Like if the data have some conflicts, we have to execute them one by one. So it will cause some delay.
 
 We also have some special rows for sink. Because we can send the data to a database or a Kafka. So we split them into two parts.
 
-But we can check the general metrics here. You can see the output events count panel. It's same as the flushed events panel on above. It means the data is sent to the downstream. And you can see the output DDL count & executing duration panel. It's for DDL. And another panel I wanna to mention is the large rows panel, we have to take care of the large rows. Because if the row is too large, it will cause the TiCDC report an error. Such as, this row change bigger than the whole table memory quota. So we can't send it. Also, because the Kafka message has some size limit. So maybe we can't send it to Kafka. So please take care of the large rows.
+But we can check the general metrics here. You can see the Output Row Count panel. It's same as the Flushed Rows panel on above. It means how many rows are sent to the downstream.
 
-And another panel is for the database. We call it transaction sink. In this row, you should focus on two panels. The first one is conflict detect duration, it's very important. If you have too many rows change conflict, it will cause we send it to downstream one by one. It will cause a lot of delay. Sometimes, it related to your workload. The second one is flush duration, if it's high, it probably means your downstream is too slow. So you should speed up the downstream.
+And you can see the output DDL count & executing duration panel. It's for DDL.
+
+And another panel I wanna to mention is the large rows panel, we have to take care of the large rows. Because if the row is too large, it will cause the TiCDC report an error. Such as, this row change bigger than the whole table memory quota. So we can't send it. Also, because the Kafka message has some size limit. So maybe we can't send it to Kafka. So please take care of the large rows.
+
+And another row is for the database. We call it transaction sink. In this row, you should focus on two panels. The first one is conflict detect duration, it's very important. If you have too many row change conflicts, it will cause we send it to downstream one by one.
+
+So it will cause a lot of delay. Sometimes, it related to your workload.
+
+The second one is flush duration, if it's high, it probably means your downstream is too slow. So you should speed up the downstream.
 
 The last one is for the Kafka. We call it MQ sink. It's similar to the transaction sink. You need to focus on the duration panel. There is no conflict detect in Kafka. Because we send the data row by row.
 
@@ -860,7 +868,7 @@ layout: intro
 Now you have known the throughput of TiCDC. But how do you know the latency?
 Users probably just saw a bunch of rows sent to the downstream. But they only care about the difference between the upstream and the downstream.
 
-There are several metrics to measure the latency. Also, these metrics indicate the latency for different parts of the data flow.
+There are several metrics to measure the latency. Also, those metrics indicate the latency for different parts of the data flow.
 -->
 
 ---
@@ -893,7 +901,7 @@ Actually, we use the slowest table's Checkpoint Ts and Resolved Ts as the global
 
 Sp we added two panels for them. To help you find the stuck table.
 
-The first one is Min Resolved table ID, you can see the table ID here. If you found the metic looks like a line, it means the table is stuck. You can use the table ID to find the root cause. We only have table ID instead of table name. Because the table name may change. But the table ID will not change. You can search the table name in the log by the table ID.
+The first one is Min Resolved table ID, you can see the table ID here. If you found the metic looks like a straight line, it always is same table ,it means the table is stuck. You can use the table ID to find the root cause. We only have table ID instead of table name. Because the table name may change. But the table ID will not change. You can search the table name in the log by the table ID.
 
 The second one is Min checkpoint table ID metric. It's similar to the Min Resolved table ID metric. You can use it to find the root cause and find which table is stuck.
 
