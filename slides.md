@@ -1,7 +1,6 @@
 ---
 layout: cover
 theme: seriph
-download: true
 background: https://user-images.githubusercontent.com/29879298/162908536-c61ef0c1-5bb7-44a2-b971-71031fc24d37.png
 class: 'text-center'
 highlighter: shiki
